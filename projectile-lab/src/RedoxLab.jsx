@@ -19,6 +19,14 @@ const HALF_CELLS = [
 ];
 
 const F = 96485; // C/mol
+const R_GAS = 8.314; // J / (mol·K)
+
+// Molar mass (g/mol) — only for half-cells whose reduced form is a plateable solid metal.
+// H₂, Br₂, and MnO₄⁻/Mn²⁺ are excluded since reduction there doesn't deposit a solid you'd "plate."
+const MOLAR_MASS = {
+  li: 6.94, mg: 24.31, al: 26.98, zn: 65.38, fe2: 55.85,
+  pb: 207.2, cu: 63.55, fe3: 55.85, ag: 107.87,
+};
 
 function metalColor(key) {
   const colors = {
@@ -35,6 +43,15 @@ export default function RedoxLab() {
   const [predicted, setPredicted] = useState(null); // 'A' | 'B' — which the user thinks is the cathode
   const [revealed, setRevealed] = useState(false);
 
+  // Nernst equation (non-standard conditions)
+  const [useNernst, setUseNernst] = useState(false);
+  const [logQ, setLogQ] = useState(0); // log₁₀(Q); Q=1 (logQ=0) recovers standard conditions
+  const [temp, setTemp] = useState(298); // K
+
+  // Electroplating / Faraday's law calculator
+  const [current, setCurrent] = useState(1); // A
+  const [platingMinutes, setPlatingMinutes] = useState(10);
+
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
 
@@ -50,6 +67,21 @@ export default function RedoxLab() {
   const spontaneous = Ecell > 0;
   const nElectrons = Math.max(cathode.n, anode.n); // simplified — balanced electron count for display
   const deltaG = -nElectrons * F * Ecell / 1000; // kJ/mol
+  const Keq = Math.exp((nElectrons * F * Ecell) / (R_GAS * 298)); // ΔG° = −RT ln K = −nFE° (at 298 K)
+
+  // E = E° − (RT/nF) ln Q, expressed in log₁₀ form: E = E° − (0.0592 V / n) log Q at 298 K,
+  // generalized here to the chosen temperature.
+  const nernstEcell = Ecell - ((R_GAS * temp) / (nElectrons * F)) * Math.LN10 * logQ;
+  const nernstSpontaneous = nernstEcell > 0;
+
+  const displayEcell = useNernst ? nernstEcell : Ecell;
+  const displaySpontaneous = useNernst ? nernstSpontaneous : spontaneous;
+
+  // Electroplating: only meaningful when the cathode's reduced form is a solid metal deposit
+  const platingMetal = MOLAR_MASS[cathode.key] ? cathode : null;
+  const platingSeconds = platingMinutes * 60;
+  const molesDeposited = platingMetal ? (current * platingSeconds) / (platingMetal.n * F) : null;
+  const massDeposited = platingMetal ? molesDeposited * MOLAR_MASS[platingMetal.key] : null;
 
   useEffect(() => {
     setRevealed(false);
@@ -134,19 +166,19 @@ export default function RedoxLab() {
 
       const vmx = W / 2, vmy = wireY;
       ctx.fillStyle = '#0F1720';
-      ctx.strokeStyle = spontaneous ? '#5EEAD4' : '#E5484D';
+      ctx.strokeStyle = displaySpontaneous ? '#5EEAD4' : '#E5484D';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(vmx, vmy, 20, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = spontaneous ? '#5EEAD4' : '#E5484D';
+      ctx.fillStyle = displaySpontaneous ? '#5EEAD4' : '#E5484D';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Ecell >= 0 ? '+' : ''}${Ecell.toFixed(2)}V`, vmx, vmy + 4);
+      ctx.fillText(`${displayEcell >= 0 ? '+' : ''}${displayEcell.toFixed(2)}V`, vmx, vmy + 4);
 
       // electron flow animation: anode -> external wire -> cathode (only if spontaneous)
-      if (spontaneous) {
+      if (displaySpontaneous) {
         const t = (performance.now() / 900) % 1;
         const segments = [
           [anodeX + cellW / 2, topY + 10, anodeX + cellW / 2, wireY],
@@ -180,7 +212,7 @@ export default function RedoxLab() {
     };
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [keyA, keyB, anode, cathode, Ecell, spontaneous]);
+  }, [keyA, keyB, anode, cathode, displayEcell, displaySpontaneous]);
 
   const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '—');
 
@@ -298,7 +330,59 @@ export default function RedoxLab() {
               <div className="text-[10px]" style={{ color: '#5C6A76' }}>
                 ΔG° = −nFE°cell = {fmt(deltaG, 1)} kJ/mol (n = {nElectrons} mol e⁻ transferred)
               </div>
+              <div className="text-[10px]" style={{ color: '#5C6A76' }}>
+                K = exp(nFE°cell / RT) ≈ {Keq > 1e6 || (Keq > 0 && Keq < 1e-6) ? Keq.toExponential(2) : Keq.toFixed(4)}
+                {Keq > 1 ? ' — heavily favors products' : Keq < 1 ? ' — heavily favors reactants' : ''}
+              </div>
             </div>
+
+            {/* Nernst equation — non-standard conditions */}
+            <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
+              <button
+                onClick={() => setUseNernst((v) => !v)}
+                className="flex items-center gap-2 text-xs w-full"
+                style={{ color: useNernst ? '#F5A623' : '#7B8894' }}
+              >
+                <Zap size={14} />
+                Nernst equation — non-standard conditions {useNernst ? '(on)' : '(off)'}
+              </button>
+              {useNernst && (
+                <div className="mt-3 space-y-3">
+                  <div className="font-mono text-[10px]" style={{ color: '#9AA7B2' }}>
+                    E = E° − (RT/nF)·ln Q
+                  </div>
+                  <Slider label="log₁₀(Q)  — reaction quotient" value={logQ} min={-6} max={6} step={0.1}
+                    onChange={setLogQ} />
+                  <div className="text-[10px]" style={{ color: '#5C6A76' }}>
+                    Q &gt; 1 means more product-side ions relative to standard (1 M) — this is what happens as a real
+                    battery discharges and ion concentrations shift toward products.
+                  </div>
+                  <Slider label="Temperature" value={temp} min={273} max={373} step={1} unit=" K" onChange={setTemp} />
+                  <div style={{ borderTop: '1px solid #1A232B', color: nernstSpontaneous ? '#5EEAD4' : '#E5484D' }} className="pt-2 font-mono text-xs">
+                    E = {nernstEcell >= 0 ? '+' : ''}{fmt(nernstEcell)} V
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Electroplating / Faraday's law calculator */}
+            {platingMetal && (
+              <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
+                <div className="text-xs mb-2" style={{ color: '#9AA7B2' }}>
+                  Electroplating calculator — how much {platingMetal.reduced} deposits at the cathode?
+                </div>
+                <div className="font-mono text-[10px] mb-3" style={{ color: '#5C6A76' }}>
+                  mass = (I × t × M) / (n × F)
+                </div>
+                <div className="space-y-3">
+                  <Slider label="Current" value={current} min={0.1} max={10} step={0.1} decimals={1} unit=" A" onChange={setCurrent} />
+                  <Slider label="Time" value={platingMinutes} min={1} max={120} step={1} unit=" min" onChange={setPlatingMinutes} />
+                </div>
+                <div style={{ borderTop: '1px solid #1A232B', color: '#5EEAD4' }} className="mt-3 pt-2 font-mono text-xs">
+                  {molesDeposited.toExponential(3)} mol → {massDeposited < 0.01 ? massDeposited.toExponential(2) : massDeposited.toFixed(3)} g of {platingMetal.reduced}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="w-full flex-1 space-y-4">
@@ -310,9 +394,9 @@ export default function RedoxLab() {
 
             {/* Spontaneity readout */}
             <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
-              <div className="flex items-center gap-2 text-sm" style={{ color: spontaneous ? '#5EEAD4' : '#E5484D' }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: displaySpontaneous ? '#5EEAD4' : '#E5484D' }}>
                 <Zap size={16} />
-                {spontaneous ? 'Spontaneous — this cell will generate current on its own' : 'Non-spontaneous — this pairing needs an external power source to run'}
+                {displaySpontaneous ? 'Spontaneous — this cell will generate current on its own' : 'Non-spontaneous — this pairing needs an external power source to run'}
               </div>
               <div className="flex items-center gap-2 text-xs mt-2" style={{ color: '#9AA7B2' }}>
                 <span style={{ color: '#F5A623' }}>{anode.label}</span> is oxidized
@@ -321,6 +405,13 @@ export default function RedoxLab() {
                 <ArrowRight size={12} />
                 <span style={{ color: '#5EEAD4' }}>{cathode.label}</span> is reduced
               </div>
+              {useNernst && Ecell > 0 && !nernstSpontaneous && (
+                <div className="text-[10px] mt-2" style={{ color: '#F5A623' }}>
+                  Under standard conditions this pairing is spontaneous (E° = +{fmt(Ecell)} V) — but at the concentrations
+                  you've set (Q = 10^{logQ}), the cell has effectively run down and stopped delivering useful current. This is exactly
+                  what happens to a battery as it discharges.
+                </div>
+              )}
             </div>
 
             {/* Potentials ladder */}
@@ -359,6 +450,22 @@ export default function RedoxLab() {
   );
 }
 
+function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChange, disabled }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span style={{ color: '#9AA7B2' }}>{label}</span>
+        <span className="font-mono" style={{ color: '#5EEAD4' }}>{value.toFixed(decimals)}{unit}</span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full" style={{ accentColor: '#5EEAD4' }}
+      />
+    </div>
+  );
+}
+
 const QUESTIONS = [
   {
     q: 'In a galvanic cell, oxidation always happens at the:',
@@ -393,6 +500,28 @@ const QUESTIONS = [
     ],
     correct: 1,
     explain: 'Without the salt bridge, charge would build up in each beaker as ions form and current would stop — the salt bridge lets spectator ions flow to keep both solutions electrically neutral.',
+  },
+  {
+    q: 'According to the Nernst equation, as a real battery discharges and Q increases toward K, the cell voltage:',
+    options: [
+      'Stays constant at E°',
+      'Increases',
+      'Decreases toward zero',
+      'Becomes negative immediately',
+    ],
+    correct: 2,
+    explain: 'E = E° − (RT/nF)ln Q — as Q grows (more products, fewer reactants), the subtracted term grows too, driving E down toward zero. That\'s exactly what "the battery is dead" means: Q has caught up to K, ΔG = 0, and there\'s no more driving force.',
+  },
+  {
+    q: "In Faraday's law, mass deposited = (I × t × M) / (n × F), the \"n\" refers to:",
+    options: [
+      'The number of half-cells in the circuit',
+      'Moles of electrons transferred per mole of the depositing ion',
+      'The reaction order',
+      'Avogadro\'s number',
+    ],
+    correct: 1,
+    explain: 'n is the electrons per formula unit in that specific half-reaction (e.g. n=2 for Cu²⁺ + 2e⁻ → Cu) — more electrons needed per ion means less metal deposited for the same charge passed.',
   },
 ];
 

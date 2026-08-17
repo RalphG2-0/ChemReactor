@@ -5,28 +5,36 @@ import { useTheme, hexToRgba } from './theme.jsx';
 
 const Kw = 1e-14;
 
+// `protons` = number of acidic H (acids) or hydroxide/basic sites (bases) per formula unit.
+// This sets the equivalence-point stoichiometry correctly for polyprotic species. The pH curve
+// itself still uses a single averaged Ka/Kb (see computePH note below) — a simplification that
+// gets the overall shape and endpoint right but smooths over the separate buffer regions a
+// real multi-step titration of e.g. H₃PO₄ would show.
 const ACIDS = [
-  { key: 'hcl', label: 'HCl (strong)', strong: true, Ka: null },
-  { key: 'h2so4', label: 'H₂SO₄ (strong)', strong: true, Ka: null },
-  { key: 'hno3', label: 'HNO₃ (strong)', strong: true, Ka: null },
-  { key: 'h2co3', label: 'H₂CO₃ (weak)', strong: false, Ka: 4.3e-7 },
-  { key: 'h3po4', label: 'H₃PO₄ (weak)', strong: false, Ka: 7.1e-3 }, 
-  { key: 'hcn', label: 'HCN (weak)', strong: false, Ka: 6.2e-10 }, 
-  { key: 'acetic', label: 'Acetic acid', strong: false, Ka: 1.8e-5 },
-  { key: 'benzoic', label: 'Benzoic acid', strong: false, Ka: 6.5e-5 },
-  { key: 'hf', label: 'Hydrofluoric acid', strong: false, Ka: 6.6e-4 },
-  { key: 'hocl', label: 'Hypochlorous acid', strong: false, Ka: 3.0e-8 },
+  { key: 'hcl', label: 'HCl (strong)', strong: true, Ka: null, protons: 1 },
+  { key: 'h2so4', label: 'H₂SO₄ (strong)', strong: true, Ka: null, protons: 2 },
+  { key: 'hno3', label: 'HNO₃ (strong)', strong: true, Ka: null, protons: 1 },
+  { key: 'h2co3', label: 'H₂CO₃ (weak)', strong: false, Ka: 4.3e-7, protons: 2 },
+  { key: 'h3po4', label: 'H₃PO₄ (weak)', strong: false, Ka: 7.1e-3, protons: 3 },
+  { key: 'hcn', label: 'HCN (weak)', strong: false, Ka: 6.2e-10, protons: 1 },
+  { key: 'acetic', label: 'Acetic acid', strong: false, Ka: 1.8e-5, protons: 1 },
+  { key: 'benzoic', label: 'Benzoic acid', strong: false, Ka: 6.5e-5, protons: 1 },
+  { key: 'hf', label: 'Hydrofluoric acid', strong: false, Ka: 6.6e-4, protons: 1 },
+  { key: 'hocl', label: 'Hypochlorous acid', strong: false, Ka: 3.0e-8, protons: 1 },
 ];
 
 const BASES = [
-  { key: 'naoh', label: 'NaOH (strong)', strong: true, Kb: null },
-  { key: 'koh', label: 'KOH (strong)', strong: true, Kb: null },
-  { key: 'ammonia', label: 'Ammonia (NH₃)', strong: false, Kb: 1.8e-5 },
-
-  { key: 'koh', label: 'KOH (strong)', strong: true, Kb: null },
-  { key: 'ammonia', label: 'Ammonia (NH₃)', strong: false, Kb: 1.8e-5 },
-  { key: 'methylamine', label: 'Methylamine', strong: false, Kb: 4.4e-4 },
-  { key: 'pyridine', label: 'Pyridine', strong: false, Kb: 1.7e-9 },
+  { key: 'naoh', label: 'NaOH (strong)', strong: true, Kb: null, protons: 1 },
+  { key: 'koh', label: 'KOH (strong)', strong: true, Kb: null, protons: 1 },
+  { key: 'lioh', label: 'LiOH (strong)', strong: true, Kb: null, protons: 1 },
+  { key: 'baoh2', label: 'Ba(OH)₂ (strong)', strong: true, Kb: null, protons: 2 },
+  { key: 'caoh2', label: 'Ca(OH)₂ (strong)', strong: true, Kb: null, protons: 2 },
+  { key: 'caco3', label: 'Calcium carbonate', strong: false, Kb: 4.8e-11, protons: 2 },
+  { key: 'na2co3', label: 'Sodium carbonate', strong: false, Kb: 2.1e-4, protons: 2 },
+  { key: 'nahco3', label: 'Sodium bicarbonate', strong: false, Kb: 2.3e-8, protons: 1 },
+  { key: 'ammonia', label: 'Ammonia (NH₃)', strong: false, Kb: 1.8e-5, protons: 1 },
+  { key: 'methylamine', label: 'Methylamine', strong: false, Kb: 4.4e-4, protons: 1 },
+  { key: 'pyridine', label: 'Pyridine', strong: false, Kb: 1.7e-9, protons: 1 },
 ];
 
 const INDICATORS = [
@@ -34,6 +42,9 @@ const INDICATORS = [
   { key: 'bromothymolblue', label: 'Bromothymol Blue', low: 6.0, high: 7.6, lowColor: [214, 178, 54], highColor: [62, 142, 208] },
   { key: 'methylred', label: 'Methyl Red', low: 4.4, high: 6.2, lowColor: [214, 69, 54], highColor: [233, 196, 86] },
   { key: 'methylorange', label: 'Methyl Orange', low: 3.1, high: 4.4, lowColor: [214, 69, 54], highColor: [247, 197, 72] },
+  { key: 'thymolblue', label: 'Thymol Blue', low: 1.2, high: 2.8, lowColor: [214, 69, 54], highColor: [62, 142, 208] },
+  {key: 'litmus', label: 'Litmus', low: 4.5, high: 8.3, lowColor: [214, 69, 54], highColor: [62, 142, 208] },
+  {key: 'universal', label: 'Universal indicator', low: 4.0, high: 10.0, lowColor: [214, 69, 54], highColor: [62, 142, 208] },
 ];
 
 // General equilibrium (charge-balance) titration model — works for any combination of
@@ -42,8 +53,12 @@ const INDICATORS = [
 function computePH(vb, Ca, Va, Cb, acid, base) {
   const Vtot = Va + vb;
   if (Vtot <= 0) return 7;
-  const CaTot = (Ca * Va) / Vtot;
-  const CbTot = (Cb * vb) / Vtot;
+  const nA = acid.protons || 1;
+  const nB = base.protons || 1;
+  // Total acidic-proton / basic-site concentration, scaled by stoichiometry — this is what
+  // fixes polyprotic species (H₂SO₄, H₃PO₄, Ba(OH)₂, Na₂CO₃, ...) previously being treated as 1:1.
+  const CaTot = (Ca * nA * Va) / Vtot;
+  const CbTot = (Cb * nB * vb) / Vtot;
   const KaConjBase = base.strong ? null : Kw / base.Kb;
 
   const f = (pH) => {
@@ -88,7 +103,7 @@ export default function TitrationLab() {
   const pKb = -Math.log10(Kb);
   const indicator = INDICATORS.find((i) => i.key === indicatorKey);
 
-  const Veq = (Ca * Va) / Cb;
+  const Veq = (Ca * acid.protons * Va) / (Cb * base.protons);
   const Vmax = Veq * 2;
   const eqPH = computePH(Veq, Ca, Va, Cb, acid, base);
   const indicatorMismatch = indicator.low > eqPH + 1 || indicator.high < eqPH - 1;
@@ -350,6 +365,13 @@ export default function TitrationLab() {
               <div style={{ color: '#9AA7B2' }} className="font-sans mb-1">Current region: <span style={{ color: '#5EEAD4' }}>{region}</span></div>
               <div style={{ color: '#DCE4EA' }}>{regionFormula}</div>
               <div style={{ color: '#5EEAD4' }} className="text-sm pt-1">pH = {fmt(live.ph)}</div>
+              {(acid.protons > 1 || base.protons > 1) && (
+                <div className="text-[10px] font-sans pt-1" style={{ color: '#5C6A76', borderTop: '1px solid #1A232B', marginTop: 4 }}>
+                  {acid.protons > 1 ? acid.label.split(' ')[0] : base.label.split(' ')[0]} has {Math.max(acid.protons, base.protons)} acidic/basic sites —
+                  the equivalence volume above correctly accounts for all of them, but a real titration would show {Math.max(acid.protons, base.protons)} separate
+                  buffer regions and equivalence points rather than the single smoothed curve shown here.
+                </div>
+              )}
             </div>
 
             {/* Setup controls */}
