@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Zap, ArrowRight } from 'lucide-react';
-import { useTheme, hexToRgba } from './theme.jsx';
 
 // Standard reduction potentials, E° (V) — oxidized form + n e⁻ → reduced form
 const HALF_CELLS = [

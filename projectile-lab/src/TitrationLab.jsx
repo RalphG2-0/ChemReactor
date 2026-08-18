@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot, ReferenceLine } from 'recharts';
 import { Play, RotateCcw } from 'lucide-react';
-import { useTheme, hexToRgba } from './theme.jsx';
 
 const Kw = 1e-14;
 

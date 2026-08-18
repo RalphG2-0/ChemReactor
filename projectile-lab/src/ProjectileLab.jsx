@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { Play, RotateCcw, Wind } from 'lucide-react';
-import { useTheme } from './theme.jsx';
 
 const PLANETS = {
   Earth: 9.81,

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { Thermometer, FlaskConical } from 'lucide-react';
-import { useTheme, hexToRgba } from './theme.jsx';
 
 const R = 0.08206; // L·atm / (mol·K)
 const VDW = { a: 3.592, b: 0.04267 }; // CO₂ approximation, L²·atm/mol², L/mol
