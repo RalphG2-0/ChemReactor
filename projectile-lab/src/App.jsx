@@ -159,6 +159,13 @@ export default function App() {
       </div>
 
       <ActiveComponent />
+      {/* Footer */}
+    <footer
+      style={{ background: '#0F1720', borderTop: '1px solid #1E2A35', color: '#7B8894' }}
+      className="mt-8 px-4 py-6 text-xs font-mono text-center"
+    >
+      © {new Date().getFullYear()} ChemReactor — built by Raphaël
+    </footer>
     </div>
     
   );
