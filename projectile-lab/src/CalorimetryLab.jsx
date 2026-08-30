@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
@@ -6,6 +6,7 @@ import {
   Flame, Snowflake, FlaskConical, Thermometer, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Info, Beaker, RotateCcw,
 } from "lucide-react";
+import { useQuestions } from './lib/useQuestions';
 
 /* ------------------------------------------------------------------ */
 /*  Fixed dark palette (matches the rest of Virtual Lab — no theming   */
@@ -102,7 +103,7 @@ function buildCurveData(tInitial, tFinalRaw, k) {
 /* ------------------------------------------------------------------ */
 /*  Quiz                                                               */
 /* ------------------------------------------------------------------ */
-const QUIZ = [
+const FALLBACK_QUIZ = [
   {
     q: "In a coffee-cup calorimeter (constant pressure), the heat measured directly corresponds to:",
     options: ["ΔH", "ΔU", "ΔS", "ΔG"],
@@ -330,11 +331,15 @@ export default function CalorimetryLab() {
   );
 
   /* ---------- quiz state ---------- */
-  const [quizSet, setQuizSet] = useState(() => shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+  const { questions } = useQuestions('calorimetry', FALLBACK_QUIZ);
+  const [quizSet, setQuizSet] = useState(() => shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  useEffect(() => {
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  }, [questions]);
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
   function newQuiz() {
-    setQuizSet(shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
     setAnswers({});
     setChecked({});
   }
@@ -588,7 +593,7 @@ export default function CalorimetryLab() {
               <RotateCcw size={12} /> New questions
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {QUIZ.length} questions, shuffled — click "New questions" for a different set.</p>
+          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {questions.length} questions, shuffled — click "New questions" for a different set.</p>
           <div className="space-y-4">
             {quizSet.map((item, qi) => {
               const picked = answers[qi];

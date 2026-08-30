@@ -39,7 +39,7 @@ const GROUPS = [
     key: 'contact',
     label: 'Contact',
     modules: [
-      { key: 'contact', label: 'Contact Form', icon: PhoneIcon, Component: ContactForm },
+      { key: 'contact', label: 'Contact me', icon: PhoneIcon, Component: ContactForm },
     ],
   }
 ];
@@ -160,5 +160,6 @@ export default function App() {
 
       <ActiveComponent />
     </div>
+    
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { Play, RotateCcw, Wind } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 const PLANETS = {
   Earth: 9.81,
@@ -482,7 +483,7 @@ function FormulaRow({ symbol, sub, result }) {
   );
 }
 
-const QUIZ_QUESTIONS = [
+const FALLBACK_QUIZ_QUESTIONS = [
   {
     q: 'With no air resistance, which launch angle maximizes range?',
     options: ['30°', '45°', '60°', '90°'],
@@ -504,11 +505,12 @@ const QUIZ_QUESTIONS = [
 ];
 
 function Quiz({ answers, setAnswers }) {
+  const { questions } = useQuestions('projectile', FALLBACK_QUIZ_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
       <div className="space-y-4">
-        {QUIZ_QUESTIONS.map((item, qi) => {
+        {questions.map((item, qi) => {
           const chosen = answers[qi];
           return (
             <div key={qi}>

@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceDot,
 } from "recharts";
 import {
   Sparkles, Waves, Aperture, ScanLine, CheckCircle2, XCircle, Info, RotateCcw,
 } from "lucide-react";
+import { useQuestions } from './lib/useQuestions';
 
 /* ------------------------------------------------------------------ */
 /*  Fixed dark palette — matches the rest of Virtual Lab, no theming   */
@@ -541,7 +542,7 @@ function DiffractionLab() {
 /* ------------------------------------------------------------------ */
 /*  Quiz                                                                */
 /* ------------------------------------------------------------------ */
-const QUIZ = [
+const FALLBACK_QUIZ = [
   { q: "A concave mirror with the object beyond its center of curvature C forms an image that is:", options: ["Virtual, upright, magnified", "Real, inverted, reduced", "Real, upright, magnified", "Virtual, inverted, reduced"], correct: 1, explain: "Beyond C, a concave mirror always forms a real, inverted image that's smaller than the object, located between F and C." },
   { q: "A convex mirror's image is always:", options: ["Real and inverted", "Virtual, upright, and reduced", "Real and magnified", "Virtual and inverted"], correct: 1, explain: "Convex mirrors diverge reflected light, so the image is always virtual, upright, and smaller than the object — regardless of object distance." },
   { q: "Snell's law, n₁sinθ₁ = n₂sinθ₂, describes what happens to light at:", options: ["A mirror surface", "The boundary between two media", "A diffraction grating", "The focal point of a lens"], correct: 1, explain: "Snell's law governs refraction — the bending of light as it crosses an interface between materials with different indices of refraction." },
@@ -582,11 +583,15 @@ const MODES = [
 
 export default function OpticsLab() {
   const [mode, setMode] = useState("mirrors");
-  const [quizSet, setQuizSet] = useState(() => shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+  const { questions } = useQuestions('optics', FALLBACK_QUIZ);
+  const [quizSet, setQuizSet] = useState(() => shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  useEffect(() => {
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  }, [questions]);
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
   function newQuiz() {
-    setQuizSet(shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
     setAnswers({});
     setChecked({});
   }
@@ -639,7 +644,7 @@ export default function OpticsLab() {
               <RotateCcw size={12} /> New questions
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {QUIZ.length} questions, shuffled — click "New questions" for a different set.</p>
+          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {questions.length} questions, shuffled — click "New questions" for a different set.</p>
           <div className="space-y-4">
             {quizSet.map((item, qi) => {
               const picked = answers[qi];

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { Thermometer, FlaskConical } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 const R = 0.08206; // L·atm / (mol·K)
 const VDW = { a: 3.592, b: 0.04267 }; // CO₂ approximation, L²·atm/mol², L/mol
@@ -392,7 +393,7 @@ function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChang
   );
 }
 
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   {
     q: "At constant temperature, if you compress a gas to half its volume, pressure will:",
     options: ['Halve', 'Double', 'Stay the same', 'Quadruple'],
@@ -420,11 +421,12 @@ const QUESTIONS = [
 
 function Quiz() {
   const [answers, setAnswers] = useState({});
+  const { questions } = useQuestions('gas-laws', FALLBACK_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
       <div className="space-y-4">
-        {QUESTIONS.map((item, qi) => {
+        {questions.map((item, qi) => {
           const chosen = answers[qi];
           return (
             <div key={qi}>

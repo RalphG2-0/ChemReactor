@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot, ReferenceLine } from 'recharts';
 import { Play, RotateCcw, Thermometer } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 const R_GAS = 8.314; // J / (mol·K)
 
@@ -391,7 +392,7 @@ export default function RateLab() {
                 </div>
               )}
 
-              <Quiz questions={ORDER_QUESTIONS} />
+              <Quiz labId="rate-order" fallbackQuestions={FALLBACK_ORDER_QUESTIONS} />
             </div>
           </div>
         ) : (
@@ -463,7 +464,7 @@ export default function RateLab() {
                 </div>
               </div>
 
-              <Quiz questions={ARRHENIUS_QUESTIONS} />
+              <Quiz labId="rate-arrhenius" fallbackQuestions={FALLBACK_ARRHENIUS_QUESTIONS} />
             </div>
           </div>
         )}
@@ -488,7 +489,7 @@ function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChang
   );
 }
 
-const ORDER_QUESTIONS = [
+const FALLBACK_ORDER_QUESTIONS = [
   {
     q: 'For a first-order reaction, the half-life:',
     options: ['Depends on [A]₀', 'Is constant, independent of [A]₀', 'Increases as the reaction proceeds', 'Only applies at high temperature'],
@@ -509,7 +510,7 @@ const ORDER_QUESTIONS = [
   },
 ];
 
-const ARRHENIUS_QUESTIONS = [
+const FALLBACK_ARRHENIUS_QUESTIONS = [
   {
     q: 'Raising the temperature increases reaction rate mainly because:',
     options: [
@@ -540,8 +541,9 @@ const ARRHENIUS_QUESTIONS = [
   },
 ];
 
-function Quiz({ questions }) {
+function Quiz({ labId, fallbackQuestions }) {
   const [answers, setAnswers] = useState({});
+  const { questions } = useQuestions(labId, fallbackQuestions);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>

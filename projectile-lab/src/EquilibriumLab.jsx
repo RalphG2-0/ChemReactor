@@ -6,6 +6,7 @@ import {
   Scale, FlaskConical, Thermometer, ArrowLeftRight, Wind, Plus, Minus,
   RotateCcw, CheckCircle2, XCircle, Info,
 } from "lucide-react";
+import { useQuestions } from './lib/useQuestions';
 
 /* ------------------------------------------------------------------ */
 /*  Fixed dark palette — matches the rest of Virtual Lab, no theming   */
@@ -372,7 +373,7 @@ function LeChatelierLab() {
 /* ------------------------------------------------------------------ */
 /*  Quiz                                                                */
 /* ------------------------------------------------------------------ */
-const QUIZ = [
+const FALLBACK_QUIZ = [
   { q: "If the reaction quotient Q is less than K, the reaction will proceed:", options: ["Forward, toward products", "In reverse, toward reactants", "Not at all — it's already at equilibrium", "It depends on temperature"], correct: 0, explain: "Q < K means there aren't yet enough products relative to reactants, so the forward reaction dominates until Q rises to meet K." },
   { q: "If Q is greater than K, the reaction will proceed:", options: ["Forward, toward products", "In reverse, toward reactants", "It stops completely", "It depends on the catalyst"], correct: 1, explain: "Q > K means there's already too much product relative to reactant for equilibrium, so the reverse reaction dominates until Q falls to meet K." },
   { q: "Adding more reactant to a system at equilibrium will shift it:", options: ["Toward the reactants", "Toward the products", "Not at all", "Toward whichever side has fewer moles of gas"], correct: 1, explain: "Le Chatelier's principle: the system responds to the added reactant by consuming some of it, producing more product until a new equilibrium is reached." },
@@ -403,11 +404,15 @@ const MODES = [
 
 export default function EquilibriumLab() {
   const [mode, setMode] = useState("ice");
-  const [quizSet, setQuizSet] = useState(() => shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+  const { questions } = useQuestions('equilibrium', FALLBACK_QUIZ);
+  const [quizSet, setQuizSet] = useState(() => shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  useEffect(() => {
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  }, [questions]);
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
   function newQuiz() {
-    setQuizSet(shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
     setAnswers({});
     setChecked({});
   }
@@ -456,7 +461,7 @@ export default function EquilibriumLab() {
               <RotateCcw size={12} /> New questions
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {QUIZ.length} questions, shuffled.</p>
+          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {questions.length} questions, shuffled.</p>
           <div className="space-y-4">
             {quizSet.map((item, qi) => {
               const picked = answers[qi];

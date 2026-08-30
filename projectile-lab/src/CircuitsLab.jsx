@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
@@ -6,6 +6,7 @@ import {
   CircuitBoard, Layers, Timer, Route, Scale, Zap, CheckCircle2, XCircle, Info,
   ChevronDown, ChevronUp, RotateCcw,
 } from "lucide-react";
+import { useQuestions } from './lib/useQuestions';
 
 /* ------------------------------------------------------------------ */
 /*  Fixed dark palette — matches the rest of Virtual Lab, no theming   */
@@ -541,7 +542,7 @@ function WheatstoneLab() {
 /* ------------------------------------------------------------------ */
 /*  Quiz                                                                */
 /* ------------------------------------------------------------------ */
-const QUIZ = [
+const FALLBACK_QUIZ = [
   { q: "In a series circuit, which quantity is the same through every resistor?", options: ["Voltage", "Current", "Power", "Resistance"], correct: 1, explain: "There's only one path for charge to flow, so the same current passes through every element in series." },
   { q: "In a parallel circuit, which quantity is the same across every branch?", options: ["Current", "Voltage", "Power", "Resistance"], correct: 1, explain: "All branches connect the same two nodes, so they all share the same voltage." },
   { q: "Combining three resistors in parallel always makes the equivalent resistance:", options: ["Larger than the largest resistor", "Smaller than the smallest resistor", "Equal to the average", "Equal to the sum"], correct: 1, explain: "Adding parallel paths always gives current more ways to flow, so R_eq is always less than the smallest individual resistor." },
@@ -583,11 +584,15 @@ const MODES = [
 
 export default function CircuitsLab() {
   const [mode, setMode] = useState("series-parallel");
-  const [quizSet, setQuizSet] = useState(() => shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+  const { questions } = useQuestions('circuits', FALLBACK_QUIZ);
+  const [quizSet, setQuizSet] = useState(() => shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  useEffect(() => {
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
+  }, [questions]);
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
   function newQuiz() {
-    setQuizSet(shuffled(QUIZ).slice(0, QUIZ_SAMPLE_SIZE));
+    setQuizSet(shuffled(questions).slice(0, QUIZ_SAMPLE_SIZE));
     setAnswers({});
     setChecked({});
   }
@@ -643,7 +648,7 @@ export default function CircuitsLab() {
               <RotateCcw size={12} /> New questions
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {QUIZ.length} questions, shuffled — click "New questions" for a different set.</p>
+          <p className="text-xs mb-3" style={{ color: theme.muted }}>{quizSet.length} of {questions.length} questions, shuffled — click "New questions" for a different set.</p>
           <div className="space-y-4">
             {quizSet.map((item, qi) => {
               const picked = answers[qi];

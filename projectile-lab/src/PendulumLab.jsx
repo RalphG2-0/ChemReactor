@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { Play, RotateCcw } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 const PLANETS = {
   Earth: 9.81,
@@ -413,7 +414,7 @@ function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChang
   );
 }
 
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   {
     q: 'The formula T = 2π√(L/g) accurately predicts a pendulum\'s period:',
     options: ['Always, for any angle', 'Only for small initial angles', 'Only when there is no gravity', 'Only when the mass is large'],
@@ -453,11 +454,12 @@ const QUESTIONS = [
 
 function Quiz() {
   const [answers, setAnswers] = useState({});
+  const { questions } = useQuestions('pendulum', FALLBACK_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
       <div className="space-y-4">
-        {QUESTIONS.map((item, qi) => {
+        {questions.map((item, qi) => {
           const chosen = answers[qi];
           return (
             <div key={qi}>

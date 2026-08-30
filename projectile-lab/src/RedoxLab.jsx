@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Zap, ArrowRight } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 // Standard reduction potentials, E° (V) — oxidized form + n e⁻ → reduced form
 const HALF_CELLS = [
@@ -465,7 +466,7 @@ function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChang
   );
 }
 
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   {
     q: 'In a galvanic cell, oxidation always happens at the:',
     options: ['Cathode', 'Anode', 'Salt bridge', 'Voltmeter'],
@@ -526,11 +527,12 @@ const QUESTIONS = [
 
 function Quiz() {
   const [answers, setAnswers] = useState({});
+  const { questions } = useQuestions('redox', FALLBACK_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
       <div className="space-y-4">
-        {QUESTIONS.map((item, qi) => {
+        {questions.map((item, qi) => {
           const chosen = answers[qi];
           return (
             <div key={qi}>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceDot, ReferenceLine } from 'recharts';
 import { Play, RotateCcw } from 'lucide-react';
+import { useQuestions } from './lib/useQuestions';
 
 const Kw = 1e-14;
 
@@ -487,7 +488,7 @@ function Slider({ label, value, min, max, step, unit = '', decimals = 0, onChang
   );
 }
 
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   {
     q: 'At the equivalence point of a strong acid–strong base titration, the pH is:',
     options: ['Always below 7', 'Exactly 7', 'Always above 7', 'Equal to the pKa'],
@@ -527,11 +528,12 @@ const QUESTIONS = [
 
 function Quiz() {
   const [answers, setAnswers] = useState({});
+  const { questions } = useQuestions('titration', FALLBACK_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
       <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
       <div className="space-y-4">
-        {QUESTIONS.map((item, qi) => {
+        {questions.map((item, qi) => {
           const chosen = answers[qi];
           return (
             <div key={qi}>
