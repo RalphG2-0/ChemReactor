@@ -77,9 +77,7 @@ function Panel({ children, style }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  SVG circuit symbols                                                */
-/* ------------------------------------------------------------------ */
+
 function ResistorH({ x, y, color = theme.wire }) {
   const d = `M${x},${y} L${x + 8},${y} L${x + 14},${y - 8} L${x + 22},${y + 8} L${x + 30},${y - 8} L${x + 38},${y + 8} L${x + 46},${y - 8} L${x + 52},${y} L${x + 60},${y}`;
   return <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" />;
@@ -139,9 +137,8 @@ function CurrentFlow({ d, magnitude, reverse, color = ACCENT.primary }) {
   );
 }
 
-/* ==================================================================== */
 /*  1. Series / Parallel resistor networks                              */
-/* ==================================================================== */
+
 function SeriesParallelLab() {
   const [arrangement, setArrangement] = useState("series"); // series | parallel
   const [voltage, setVoltage] = useState(12);
@@ -266,9 +263,8 @@ function SeriesParallelLab() {
   );
 }
 
-/* ==================================================================== */
 /*  2. RC Circuit — charging / discharging                              */
-/* ==================================================================== */
+
 function RCLab() {
   const [resistance, setResistance] = useState(10000); // ohms
   const [capacitance, setCapacitance] = useState(100); // microfarads
@@ -357,9 +353,8 @@ function RCLab() {
   );
 }
 
-/* ==================================================================== */
-/*  3. Kirchhoff's Laws — two-loop circuit                              */
-/* ==================================================================== */
+/*  3. Kirchhoff's Laws — two-loop circuit            */
+
 function KirchhoffLab() {
   const [v1, setV1] = useState(10);
   const [v2, setV2] = useState(5);
@@ -453,15 +448,15 @@ function KirchhoffLab() {
   );
 }
 
-/* ==================================================================== */
+
 /*  4. Wheatstone Bridge                                                */
-/* ==================================================================== */
-const HIDDEN_RX = 560; // unknown resistor value the student must find, ohms
+
+const HIDDEN_RX = 560; 
 
 function WheatstoneLab() {
-  const [r1] = useState(1000); // known ratio arm A (fixed)
-  const [r2] = useState(1000); // known ratio arm B (fixed)
-  const [r3, setR3] = useState(400); // adjustable variable resistance box
+  const [r1] = useState(1000); 
+  const [r2] = useState(1000); 
+  const [r3, setR3] = useState(400); 
   const [voltage, setVoltage] = useState(6);
 
   const calc = useMemo(() => {
@@ -539,9 +534,8 @@ function WheatstoneLab() {
   );
 }
 
-/* ------------------------------------------------------------------ */
 /*  Quiz                                                                */
-/* ------------------------------------------------------------------ */
+
 const FALLBACK_QUIZ = [
   { q: "In a series circuit, which quantity is the same through every resistor?", options: ["Voltage", "Current", "Power", "Resistance"], correct: 1, explain: "There's only one path for charge to flow, so the same current passes through every element in series." },
   { q: "In a parallel circuit, which quantity is the same across every branch?", options: ["Current", "Voltage", "Power", "Resistance"], correct: 1, explain: "All branches connect the same two nodes, so they all share the same voltage." },
@@ -572,9 +566,8 @@ function shuffled(arr) {
   return a;
 }
 
-/* ==================================================================== */
 /*  Main component                                                      */
-/* ==================================================================== */
+
 const MODES = [
   { id: "series-parallel", label: "Series / Parallel", icon: Layers, Component: SeriesParallelLab },
   { id: "rc", label: "RC Circuit", icon: Timer, Component: RCLab },
