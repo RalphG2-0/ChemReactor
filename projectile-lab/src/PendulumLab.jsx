@@ -452,15 +452,42 @@ const FALLBACK_QUESTIONS = [
   },
 ];
 
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function Quiz() {
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
   const { questions } = useQuestions('pendulum', FALLBACK_QUESTIONS);
+  const [quizSet, setQuizSet] = useState(() => shuffled(questions));
+  useEffect(() => {
+    setQuizSet(shuffled(questions));
+  }, [questions]);
+  function newQuiz() {
+    setQuizSet(shuffled(questions));
+    setAnswers({});
+    setChecked({});
+  }
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
-      <div className="text-xs mb-3" style={{ color: '#9AA7B2' }}>Check your understanding</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs" style={{ color: '#9AA7B2' }}>Check your understanding</div>
+        <button
+          onClick={newQuiz}
+          className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded"
+          style={{ border: '1px solid #2A363F', color: '#9AA7B2' }}
+        >
+          <RotateCcw size={12} /> New questions
+        </button>
+      </div>
       <div className="space-y-4">
-        {questions.map((item, qi) => {
+        {quizSet.map((item, qi) => {
           const chosen = answers[qi];
           const isChecked = checked[qi];
           return (
