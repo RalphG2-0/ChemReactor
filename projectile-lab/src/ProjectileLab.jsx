@@ -505,6 +505,7 @@ const FALLBACK_QUIZ_QUESTIONS = [
 ];
 
 function Quiz({ answers, setAnswers }) {
+  const [checked, setChecked] = useState({});
   const { questions } = useQuestions('projectile', FALLBACK_QUIZ_QUESTIONS);
   return (
     <div style={{ background: '#0F1720', border: '1px solid #1E2A35', borderRadius: 8 }} className="p-3">
@@ -512,6 +513,7 @@ function Quiz({ answers, setAnswers }) {
       <div className="space-y-4">
         {questions.map((item, qi) => {
           const chosen = answers[qi];
+          const isChecked = checked[qi];
           return (
             <div key={qi}>
               <div className="text-xs mb-2" style={{ color: '#DCE4EA' }}>{qi + 1}. {item.q}</div>
@@ -521,15 +523,17 @@ function Quiz({ answers, setAnswers }) {
                   const isCorrect = oi === item.correct;
                   let border = '#2A363F';
                   let color = '#9AA7B2';
-                  if (chosen !== undefined) {
+                  if (isChecked) {
                     if (isCorrect) { border = '#5EEAD4'; color = '#5EEAD4'; }
                     else if (isChosen) { border = '#E5484D'; color = '#E5484D'; }
+                  } else if (isChosen) {
+                    border = '#5EEAD4'; color = '#DCE4EA';
                   }
                   return (
                     <button
                       key={oi}
-                      onClick={() => setAnswers((a) => ({ ...a, [qi]: oi }))}
-                      disabled={chosen !== undefined}
+                      onClick={() => !isChecked && setAnswers((a) => ({ ...a, [qi]: oi }))}
+                      disabled={isChecked}
                       style={{ border: `1px solid ${border}`, color }}
                       className="text-left text-xs px-2.5 py-1.5 rounded font-mono disabled:opacity-100"
                     >
@@ -538,7 +542,25 @@ function Quiz({ answers, setAnswers }) {
                   );
                 })}
               </div>
-              {chosen !== undefined && (
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => setChecked((c) => ({ ...c, [qi]: true }))}
+                  disabled={chosen === undefined || isChecked}
+                  style={{
+                    background: chosen !== undefined && !isChecked ? '#5EEAD4' : '#1E2A35',
+                    color: chosen !== undefined && !isChecked ? '#0B0F14' : '#5C6A76',
+                  }}
+                  className="text-xs font-mono font-semibold px-2.5 py-1 rounded transition-colors"
+                >
+                  Check answer
+                </button>
+                {isChecked && (
+                  <span className="text-xs font-mono" style={{ color: chosen === item.correct ? '#5EEAD4' : '#E5484D' }}>
+                    {chosen === item.correct ? 'Correct' : 'Not quite'}
+                  </span>
+                )}
+              </div>
+              {isChecked && (
                 <div className="text-[10px] mt-1.5" style={{ color: '#7B8894' }}>{item.explain}</div>
               )}
             </div>
